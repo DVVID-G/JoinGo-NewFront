@@ -1,0 +1,17 @@
+{
+  "name": "JoinGo - Videoconferencias",
+  "short_name": "JoinGo",
+  "description": "Plataforma de videoconferencias fácil y segura",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0EA5E9",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
