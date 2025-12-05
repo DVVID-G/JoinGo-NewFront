@@ -12,6 +12,7 @@ import {
   isProviderRedirectError,
   loginWithEmail,
   loginWithProvider,
+  requestPasswordReset,
 } from '@/services/auth';
 import type { ApiError } from '@/lib/api-client';
 import { toast } from 'sonner';
@@ -23,6 +24,9 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [showReset, setShowReset] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -145,6 +149,28 @@ export default function Login() {
     }
   };
 
+  const handlePasswordReset = async () => {
+    const targetEmail = (resetEmail || email).trim();
+
+    if (!targetEmail) {
+      toast.error('Ingresa tu correo para restablecer la contraseña');
+      return;
+    }
+
+    setIsSendingReset(true);
+    try {
+      await requestPasswordReset(targetEmail);
+      toast.success('Te enviamos un correo para restablecer tu contraseña');
+    } catch (error) {
+      const message = error instanceof FirebaseError
+        ? translateFirebaseError(error)
+        : 'No pudimos enviar el correo. Intenta nuevamente.';
+      toast.error(message);
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen">
       {/* Left side - Form */}
@@ -264,10 +290,43 @@ export default function Login() {
             </div>
 
             <div className="flex items-center justify-end">
-              <Link to="#" className="text-sm font-medium text-primary hover:underline">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReset((prev) => !prev);
+                  setResetEmail((current) => current || email);
+                }}
+                disabled={isLoading || isSendingReset}
+                className="text-sm font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+              >
                 ¿Olvidaste tu contraseña?
-              </Link>
+              </button>
             </div>
+
+            {showReset && (
+              <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-4">
+                <Label htmlFor="resetEmail" className="text-sm font-medium text-muted-foreground">
+                  Ingresa el correo para enviar el enlace de recuperación
+                </Label>
+                <Input
+                  id="resetEmail"
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={resetEmail || email}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  autoComplete="email"
+                />
+                <Button
+                  type="button"
+                  className="w-full"
+                  variant="secondary"
+                  onClick={handlePasswordReset}
+                  disabled={isSendingReset || isLoading}
+                >
+                  {isSendingReset ? 'Enviando correo...' : 'Enviar enlace de recuperación'}
+                </Button>
+              </div>
+            )}
 
             <Button type="submit" className="btn-gradient w-full" disabled={isLoading}>
               {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}

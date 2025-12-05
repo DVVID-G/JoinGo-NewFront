@@ -169,9 +169,13 @@ export function isProviderRedirectError(error: unknown): error is ProviderRedire
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {
+  const resetUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/reset-password`
+    : undefined;
+
   try {
-    await sendPasswordResetEmail(firebaseAuth, email);
-  } catch (error) {
+    await sendPasswordResetEmail(firebaseAuth, email, resetUrl ? { url: resetUrl, handleCodeInApp: true } : undefined);
+  } catch (_) {
     // Fallback al backend por compatibilidad
     await apiFetch('/api/auth/forgot-password', {
       method: 'POST',
