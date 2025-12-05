@@ -3,9 +3,15 @@ import { refreshAuthTokens } from '@/services/token';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
 
+/**
+ * Normalized error shape returned by `apiFetch`.
+ */
 export interface ApiError {
+  /** Machine-readable error code when provided by the backend. */
   code: string;
+  /** Human-readable description of the error. */
   message: string;
+  /** HTTP status associated with the failure. */
   status: number;
 }
 
@@ -98,6 +104,15 @@ async function tryRefreshTokens(): Promise<boolean> {
   return refreshPromise;
 }
 
+/**
+ * Wrapper over `fetch` that injects auth headers, parses `{ data: T }` payloads,
+ * and retries once on 401 by refreshing Firebase tokens.
+ * @param path Relative API path (prefixed with `VITE_API_URL`).
+ * @param options Request init options; JSON body automatically sets `Content-Type`.
+ * @param retry Internal flag to avoid infinite loops after a refresh attempt.
+ * @returns Parsed response payload, unwrapped from `{ data: T }` when present.
+ * @throws ApiError when the response is not ok after optional refresh.
+ */
 export async function apiFetch<T>(path: string, options: RequestInit = {}, retry = true): Promise<T> {
   const { url, init } = prepareRequest(path, options);
   const response = await fetch(url, init);

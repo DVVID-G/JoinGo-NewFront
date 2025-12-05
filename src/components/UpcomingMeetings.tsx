@@ -10,6 +10,9 @@ interface UpcomingMeetingsProps {
   meetings: Meeting[];
 }
 
+/**
+ * Card list showing upcoming meetings with quick actions to join, copy code, or remove.
+ */
 export function UpcomingMeetings({ meetings }: UpcomingMeetingsProps) {
   const navigate = useNavigate();
   const { removeMeeting } = useMeetingStore();

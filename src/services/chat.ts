@@ -62,20 +62,14 @@ export type ErrorCallback = (error: { code: string; message: string }) => void;
 export type ChatConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
 
 /**
- * Servicio de chat en tiempo real usando Socket.IO
- * 
+ * Real-time chat client backed by Socket.IO for meeting rooms.
+ *
  * @example
  * ```ts
- * // Conectar
  * chatService.connect('meeting123');
- * 
- * // Escuchar mensajes
- * chatService.onMessage((msg) => console.log('Nuevo mensaje:', msg));
- * 
- * // Enviar mensaje
+ * const offMessage = chatService.onMessage((msg) => console.log(msg.message));
  * chatService.sendMessage('Hola a todos!');
- * 
- * // Desconectar
+ * offMessage();
  * chatService.disconnect();
  * ```
  */
@@ -91,21 +85,23 @@ class ChatService {
   private stateChangeCallbacks: Set<(state: ChatConnectionState) => void> = new Set();
 
   /**
-   * Obtiene el estado actual de la conexión
+   * Returns the current connection state.
    */
   getConnectionState(): ChatConnectionState {
     return this.connectionState;
   }
 
   /**
-   * Verifica si está conectado
+   * Checks whether the socket is connected.
    */
   isConnected(): boolean {
     return this.connectionState === 'connected' && this.socket?.connected === true;
   }
 
   /**
-   * Conecta al servicio de chat y se une a una sala
+   * Connects to the chat service and joins the given meeting room.
+   * @param meetingId Meeting identifier used to scope messages and presence.
+   * @remarks Requires an authenticated user with an idToken present in `authStore`.
    */
   connect(meetingId: string): void {
     console.log('[ChatService] Intentando conectar a sala:', meetingId);
@@ -186,7 +182,7 @@ class ChatService {
   }
 
   /**
-   * Desconecta del servicio de chat
+   * Disconnects from the chat service and leaves the current room.
    */
   disconnect(): void {
     if (this.socket) {
@@ -201,7 +197,8 @@ class ChatService {
   }
 
   /**
-   * Envía un mensaje a la sala actual (usando chat:message según spec)
+   * Sends a chat message to the current room via `chat:message` event.
+   * @param message Plain text message content.
    */
   sendMessage(message: string): void {
     if (!this.socket?.connected || !this.currentMeetingId) {
@@ -223,7 +220,9 @@ class ChatService {
   }
 
   /**
-   * Registra un callback para recibir mensajes
+   * Subscribes to incoming chat messages.
+   * @param callback Handler invoked for every new `chat:message`.
+   * @returns Unsubscribe function.
    */
   onMessage(callback: MessageCallback): () => void {
     this.messageCallbacks.add(callback);
@@ -231,7 +230,9 @@ class ChatService {
   }
 
   /**
-   * Registra un callback para usuarios online (spec: usersOnline event)
+   * Subscribes to users-online updates for the current room.
+   * @param callback Handler invoked when the server emits `usersOnline`.
+   * @returns Unsubscribe function.
    */
   onUsersOnline(callback: UsersOnlineCallback): () => void {
     this.usersOnlineCallbacks.add(callback);
@@ -239,7 +240,9 @@ class ChatService {
   }
 
   /**
-   * Registra un callback para errores
+   * Subscribes to chat errors pushed by the server.
+   * @param callback Handler invoked on error events.
+   * @returns Unsubscribe function.
    */
   onError(callback: ErrorCallback): () => void {
     this.errorCallbacks.add(callback);
@@ -247,7 +250,9 @@ class ChatService {
   }
 
   /**
-   * Registra un callback para cambios de estado de conexión
+   * Subscribes to connection state changes.
+   * @param callback Handler invoked when connection state updates.
+   * @returns Unsubscribe function.
    */
   onConnectionStateChange(callback: (state: ChatConnectionState) => void): () => void {
     this.stateChangeCallbacks.add(callback);
@@ -255,7 +260,9 @@ class ChatService {
   }
 
   /**
-   * Carga el historial de mensajes de una reunión
+   * Loads persisted chat history for a meeting.
+   * @param meetingId Meeting identifier to load history from.
+   * @param limit Maximum number of messages to retrieve (default 50).
    */
   async loadHistory(meetingId: string, limit = 50): Promise<ChatMessage[]> {
     return fetchMeetingMessages(meetingId, limit);
@@ -331,7 +338,7 @@ class ChatService {
   }
 }
 
-// Singleton del servicio de chat
+/** Singleton chat service instance. */
 export const chatService = new ChatService();
 
 // Re-exportar tipos de meetings.ts

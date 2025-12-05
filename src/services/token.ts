@@ -16,6 +16,12 @@ function ensureApiKey(): string {
   return apiKey;
 }
 
+/**
+ * Exchanges a Firebase refresh token for fresh ID/refresh tokens using Secure Token API.
+ * @param refreshToken Firebase refresh token.
+ * @returns Updated auth tokens with new expiry.
+ * @throws If the refresh request fails or returns an unexpected payload.
+ */
 export async function refreshAuthTokens(refreshToken: string): Promise<AuthTokens> {
   const apiKey = ensureApiKey();
   const response = await fetch(`${SECURE_TOKEN_ENDPOINT}?key=${apiKey}`, {

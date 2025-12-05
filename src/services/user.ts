@@ -18,6 +18,10 @@ interface BackendUser {
   deletedAt?: string | null;
 }
 
+/**
+ * Shape used to upsert user data in the backend.
+ * All fields are optional to support partial updates.
+ */
 export interface UpsertUserPayload {
   firstName?: string;
   lastName?: string;
@@ -50,11 +54,20 @@ function normalizeUser(data: BackendUser): User {
   };
 }
 
+/**
+ * Fetches the authenticated user profile from the backend.
+ * @returns The normalized user object as stored in `authStore`.
+ */
 export async function fetchCurrentUser(): Promise<User> {
   const data = await apiFetch<BackendUser>('/api/users/me');
   return normalizeUser(data);
 }
 
+/**
+ * Syncs (creates or updates) the user profile with backend data coming from Firebase.
+ * @param payload Profile attributes to upsert.
+ * @returns The normalized user stored in the auth store shape.
+ */
 export async function syncUserProfile(payload: UpsertUserPayload): Promise<User> {
   const data = await apiFetch<BackendUser>('/api/users/sync', {
     method: 'POST',
@@ -63,6 +76,11 @@ export async function syncUserProfile(payload: UpsertUserPayload): Promise<User>
   return normalizeUser(data);
 }
 
+/**
+ * Updates the current user profile with editable fields.
+ * @param payload Partial profile fields to persist.
+ * @returns The normalized user after the update.
+ */
 export async function updateUserProfile(payload: UpsertUserPayload): Promise<User> {
   const data = await apiFetch<BackendUser>('/api/users/me', {
     method: 'PUT',
@@ -71,6 +89,10 @@ export async function updateUserProfile(payload: UpsertUserPayload): Promise<Use
   return normalizeUser(data);
 }
 
+/**
+ * Soft-deletes the user account (or fully deletes when `full` is true).
+ * @param options.full When true, performs a full removal instead of soft delete.
+ */
 export async function deleteUserAccount(options: { full?: boolean } = {}): Promise<void> {
   const search = new URLSearchParams();
   if (options.full !== undefined) {

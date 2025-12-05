@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+/** Lifecycle status for a meeting. */
 export type MeetingStatus = 'active' | 'inactive' | 'closed';
 
+/** Feature toggles per meeting as returned by backend metadata. */
 export interface MeetingSettings {
   chat?: boolean;
   waitingRoom?: boolean;
@@ -11,6 +13,9 @@ export interface MeetingSettings {
   requirePassword?: boolean;
 }
 
+/**
+ * Normalized meeting shape used across the client.
+ */
 export interface Meeting {
   id: string;
   code: string;
@@ -45,6 +50,9 @@ interface MeetingState {
   getUpcomingMeetings: () => Meeting[];
 }
 
+/**
+ * Persisted meeting store with helpers to upsert and query meetings.
+ */
 export const useMeetingStore = create<MeetingState>()(
   persist(
     (set, get) => ({

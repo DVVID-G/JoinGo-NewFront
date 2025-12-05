@@ -3,48 +3,44 @@ import { chatService, ChatConnectionState, ChatMessage, UsersOnlinePayload } fro
 import { useAuthStore } from '@/store/authStore';
 
 interface UseChatOptions {
-  /** ID de la reunión */
+  /** Meeting identifier used to scope messages. */
   meetingId: string;
-  /** Si debe conectar automáticamente al montar */
+  /** Whether to auto-connect on mount. */
   autoConnect?: boolean;
-  /** Límite de mensajes del historial */
+  /** Max number of historical messages to load. */
   historyLimit?: number;
-  /** Callback cuando llega un nuevo mensaje */
+  /** Called for each incoming message. */
   onNewMessage?: (message: ChatMessage) => void;
-  /** Callback cuando cambia la lista de usuarios online */
+  /** Called when the server reports online users. */
   onUsersOnline?: (payload: UsersOnlinePayload) => void;
-  /** Callback cuando hay un error */
+  /** Called when the chat service emits an error. */
   onError?: (error: { code: string; message: string }) => void;
 }
 
 interface UseChatReturn {
-  /** Lista de mensajes (historial + nuevos) */
+  /** Messages (history + new ones) for the current room. */
   messages: ChatMessage[];
-  /** Estado de la conexión */
+  /** Connection state reported by chat service. */
   connectionState: ChatConnectionState;
-  /** Si está cargando el historial */
+  /** Indicates when message history is loading. */
   isLoadingHistory: boolean;
-  /** Error si ocurrió alguno */
+  /** Last error, if any. */
   error: Error | null;
-  /** Usuarios online en la sala */
+  /** Users online payload for the room. */
   usersOnline: UsersOnlinePayload | null;
-  /** Enviar un mensaje */
+  /** Sends a chat message. */
   sendMessage: (message: string) => void;
-  /** Conectar manualmente */
+  /** Connects manually to the chat service. */
   connect: () => void;
-  /** Desconectar manualmente */
+  /** Disconnects manually from the chat service. */
   disconnect: () => void;
-  /** Recargar historial */
+  /** Reloads history from backend. */
   reloadHistory: () => Promise<void>;
 }
 
 /**
- * Hook para gestionar el chat en una reunión
- * 
- * - Carga el historial de mensajes
- * - Se conecta a Socket.IO para mensajes en tiempo real
- * - Mantiene la lista de mensajes actualizada
- * 
+ * Chat hook that loads history and wires Socket.IO real-time messaging for a meeting room.
+ *
  * @example
  * ```tsx
  * const { messages, sendMessage, connectionState } = useChat({
@@ -52,11 +48,8 @@ interface UseChatReturn {
  *   autoConnect: true,
  * });
  * 
- * // Enviar mensaje
  * sendMessage('Hola a todos!');
- * 
- * // Mostrar mensajes
- * messages.map(msg => <ChatBubble key={msg.messageId} {...msg} />)
+ * messages.map(msg => <ChatBubble key={msg.messageId} {...msg} />);
  * ```
  */
 export function useChat({

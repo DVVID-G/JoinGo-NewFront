@@ -25,6 +25,9 @@ import type { ApiError } from '@/lib/api-client';
 import { createMeeting } from '@/services/meetings';
 import { toast } from 'sonner';
 
+/**
+ * Generates 30-minute time slots for select inputs.
+ */
 const generateTimeOptions = () => {
   const times: string[] = [];
   for (let h = 0; h < 24; h++) {
@@ -39,6 +42,9 @@ const generateTimeOptions = () => {
 
 const TIME_OPTIONS = generateTimeOptions();
 
+/**
+ * Form component to schedule a meeting and persist it via backend service.
+ */
 export function CreateMeetingForm() {
   const { user } = useAuthStore();
   const { upsertMeeting } = useMeetingStore();

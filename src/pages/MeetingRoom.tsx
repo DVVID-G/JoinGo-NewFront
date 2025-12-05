@@ -31,7 +31,7 @@ import { startVoiceChat, stopVoiceChat, setMicrophoneEnabled } from '@/services/
 import { toast } from 'sonner';
 
 /**
- * Componente para renderizar el audio de un peer remoto
+ * Hidden audio renderer for a remote peer stream.
  */
 function RemoteAudio({ peerId, stream }: { peerId: string; stream: MediaStream }) {
   const ref = useRef<HTMLAudioElement | null>(null);
@@ -45,6 +45,9 @@ function RemoteAudio({ peerId, stream }: { peerId: string; stream: MediaStream }
   return <audio ref={ref} data-peer-id={peerId} autoPlay playsInline style={{ display: "none" }} />;
 }
 
+/**
+ * Meeting room page handling media, voice chat, and text chat for a meeting code/ID.
+ */
 export default function MeetingRoom() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
@@ -121,6 +124,9 @@ export default function MeetingRoom() {
   };
 
   // Obtener acceso a la cámara y micrófono
+  /**
+   * Requests local media (camera + mic) and binds streams to local elements.
+   */
   const initializeMediaDevices = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -266,6 +272,9 @@ export default function MeetingRoom() {
 
   const remotePeerCount = Object.keys(remoteStreams).length;
 
+  /**
+   * Ends the call, optionally closes the meeting when host, and navigates out.
+   */
   const handleEndCall = async () => {
     // Detener streams de media
     if (localStream) {
@@ -287,6 +296,9 @@ export default function MeetingRoom() {
     navigate('/dashboard');
   };
 
+  /**
+   * Copies the meeting code to clipboard with textarea fallback.
+   */
   const handleCopyCode = async () => {
     if (code) {
       try {
@@ -305,6 +317,9 @@ export default function MeetingRoom() {
     }
   };
 
+  /**
+   * Sends a chat message via useChat hook and clears the input.
+   */
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatMessage.trim() || !user) return;
@@ -313,6 +328,9 @@ export default function MeetingRoom() {
     setChatMessage('');
   };
 
+  /**
+   * Toggles local video track, requesting permissions again when needed.
+   */
   const toggleVideo = async () => {
     const stream = localStream;
     const videoTrack = stream?.getVideoTracks()[0];
@@ -344,10 +362,16 @@ export default function MeetingRoom() {
     setIsVideoOn((prev) => !prev);
   };
 
+  /**
+   * Toggles microphone tracks on/off.
+   */
   const toggleAudio = () => {
     setIsAudioOn(!isAudioOn);
   };
 
+  /**
+   * Switches between screen sharing and camera stream.
+   */
   const toggleScreenShare = async () => {
     if (isScreenSharing) {
       // Detener compartir pantalla y volver a cámara

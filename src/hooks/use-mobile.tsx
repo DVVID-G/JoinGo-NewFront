@@ -2,6 +2,10 @@ import * as React from "react";
 
 const MOBILE_BREAKPOINT = 768;
 
+/**
+ * Responsive hook that returns true when viewport is under the mobile breakpoint.
+ * Uses a matchMedia listener; returns false on first render until computed.
+ */
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined);
 

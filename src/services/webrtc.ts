@@ -45,15 +45,19 @@ const iceServers = (() => {
 })();
 
 export interface VoiceChatCallbacks {
+  /** Called when a remote peer publishes a stream. */
   onRemoteStream?: (peerId: string, stream: MediaStream) => void;
+  /** Called when a peer disconnects or is torn down. */
   onPeerLeft?: (peerId: string) => void;
 }
 
 /**
- * Starts a voice chat session using Socket.IO + Peer.js.
- * @param meetingId - Meeting identifier used as the room key on the signaling server.
- * @param callbacks - Callbacks for remote stream and peer left events
- * @returns helper utilities for cleanup and local audio.
+ * Starts a voice chat session using Socket.IO + Peer.js for audio-only calls.
+ * @param meetingId Meeting identifier used as the room key on the signaling server.
+ * @param callbacks Optional callbacks for remote stream and peer leave events.
+ * @returns Helper utilities for cleanup and the acquired local audio stream.
+ * @throws If `meetingId` is empty or `VITE_WEBRTC_URL` is missing.
+ * @remarks Requires microphone permission; uses TURN credentials when provided.
  */
 export async function startVoiceChat(
   meetingId: string,
@@ -197,7 +201,8 @@ function teardownPeer(peerId: string, onPeerLeft: (peerId: string) => void) {
 }
 
 /**
- * Stops all peers and closes the signaling socket.
+ * Stops all peers, closes the signaling socket, and releases microphone tracks.
+ * @remarks Idempotent; safe to call even if voice chat is not active.
  */
 export function stopVoiceChat() {
   console.log("[WebRTC] Deteniendo voice chat");
@@ -221,8 +226,8 @@ export function stopVoiceChat() {
 }
 
 /**
- * Toggles the local microphone tracks.
- * @param enabled - true to allow audio, false to mute microphone.
+ * Toggles all local microphone tracks on or off.
+ * @param enabled True to allow audio, false to mute microphone.
  */
 export function setMicrophoneEnabled(enabled: boolean) {
   if (!localStream) return;

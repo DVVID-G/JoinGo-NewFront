@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/authStore';
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 /**
- * Mensaje de chat persistido en el backend
+ * Chat message persisted by the backend for a meeting room.
  */
 export interface ChatMessage {
   messageId: string;
@@ -53,9 +53,13 @@ interface BackendMeetingMetadata {
 }
 
 export interface CreateMeetingInput {
+  /** Visible title for the meeting. */
   meetingName: string;
+  /** Date string (YYYY-MM-DD) used by the backend. */
   date: string;
+  /** Start time in HH:mm format. */
   startTime: string;
+  /** End time in HH:mm format. */
   endTime: string;
   description?: string;
   duration?: string;
@@ -107,11 +111,21 @@ function normalizeMeeting(data: BackendMeeting): Meeting {
   };
 }
 
+/**
+ * Retrieves the authenticated user's meetings and normalizes backend metadata.
+ * @returns Array of meetings ready for `meetingStore` consumption.
+ */
 export async function fetchMeetings(): Promise<Meeting[]> {
   const data = await apiFetch<BackendMeeting[]>('/api/meetings');
   return data.map(normalizeMeeting);
 }
 
+/**
+ * Creates a new meeting with normalized metadata.
+ * @param payload Meeting creation fields coming from the form.
+ * @returns The normalized meeting record ready for the store.
+ * @throws ApiError when the backend rejects the request.
+ */
 export async function createMeeting(payload: CreateMeetingInput): Promise<Meeting> {
   const body = {
     meetingName: payload.meetingName,
@@ -140,8 +154,10 @@ export async function createMeeting(payload: CreateMeetingInput): Promise<Meetin
 }
 
 /**
- * Obtiene una reunión por su ID (ruta pública, no requiere auth)
- * Útil para verificar si una reunión existe antes de unirse
+ * Fetches a meeting by ID from the public endpoint (no auth required).
+ * @param meetingId Meeting identifier to fetch.
+ * @returns The normalized meeting data.
+ * @remarks Uses a direct `fetch` because the backend does not require auth and returns a `data` wrapper.
  */
 export async function getMeetingById(meetingId: string): Promise<Meeting> {
   console.log('[getMeetingById] Buscando reunión con ID:', meetingId);
@@ -181,8 +197,10 @@ export async function getMeetingById(meetingId: string): Promise<Meeting> {
 }
 
 /**
- * Obtiene el historial de mensajes de una reunión
- * ⚠️ Este endpoint devuelve un array directo (sin wrapper { data: ... })
+ * Retrieves the chat history for a meeting.
+ * @param meetingId Meeting identifier whose messages are requested.
+ * @param limit Optional page size; defaults to the latest 50 messages.
+ * @returns Array of messages; endpoint returns a bare array (no `{ data: [] }`).
  */
 export async function fetchMeetingMessages(
   meetingId: string,
@@ -217,10 +235,10 @@ export async function fetchMeetingMessages(
 }
 
 /**
- * Actualiza el estado de una reunión (solo el host puede ejecutar)
- * - 'active': reunión activa
- * - 'inactive': soft delete (marca deletedAt)
- * - 'closed': reunión finalizada
+ * Updates the meeting lifecycle status (host-only operation).
+ * @param meetingId Meeting identifier to update.
+ * @param status Target status: `active`, `inactive`, or `closed`.
+ * @returns The normalized meeting after the update.
  */
 export async function updateMeetingStatus(
   meetingId: string,

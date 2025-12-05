@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+/**
+ * Authenticated user profile normalized for the client.
+ */
 export interface User {
   id: string;
   firstName: string;
@@ -17,6 +20,9 @@ export interface User {
   deletedAt?: string | null;
 }
 
+/**
+ * Firebase auth token bundle with expiration.
+ */
 export interface AuthTokens {
   idToken: string;
   refreshToken: string;
@@ -33,6 +39,9 @@ interface AuthState {
   setTokens: (tokens: AuthTokens | null) => void;
 }
 
+/**
+ * Persisted auth store keeping user profile and Firebase tokens.
+ */
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({

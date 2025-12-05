@@ -1,7 +1,7 @@
 import { apiFetch } from '@/lib/api-client';
 
 /**
- * Configuración de servidor ICE para WebRTC
+ * ICE server configuration for WebRTC.
  */
 export interface IceServer {
   urls: string;
@@ -10,7 +10,7 @@ export interface IceServer {
 }
 
 /**
- * Configuración de voz devuelta por el backend
+ * Voice configuration returned by the backend.
  */
 export interface VoiceConfig {
   voiceServerUrl: string;
@@ -20,8 +20,7 @@ export interface VoiceConfig {
 }
 
 /**
- * Sesión de voz para unirse a una reunión
- * El token expira en 5 minutos
+ * Voice session metadata required to join a meeting. Token typically expires in 5 minutes.
  */
 export interface VoiceSession {
   meetingId: string;
@@ -35,8 +34,7 @@ export interface VoiceSession {
 }
 
 /**
- * Configuración local de ICE servers desde variables de entorno
- * Se usa como fallback si el backend no responde
+ * Builds ICE server configuration from env variables; used as fallback when backend is unavailable.
  */
 export function getLocalIceServers(): IceServer[] {
   const iceUrl = import.meta.env.VITE_ICE_SERVER_URL;
@@ -60,15 +58,15 @@ export function getLocalIceServers(): IceServer[] {
 }
 
 /**
- * URL del servidor WebRTC desde variables de entorno
+ * Returns WebRTC server base URL from env with a localhost fallback.
  */
 export function getWebRTCServerUrl(): string {
   return import.meta.env.VITE_WEBRTC_URL ?? 'http://localhost:9000';
 }
 
 /**
- * Obtiene la configuración de voz del backend
- * Incluye URLs del servidor y configuración de ICE servers
+ * Fetches voice configuration from the backend, falling back to local env values on error.
+ * @returns Voice configuration including signaling endpoints and ICE servers.
  */
 export async function getVoiceConfig(): Promise<VoiceConfig> {
   try {
@@ -89,11 +87,9 @@ export async function getVoiceConfig(): Promise<VoiceConfig> {
 }
 
 /**
- * Crea una sesión de voz para unirse a una reunión
- * El token devuelto es válido por 5 minutos
- * 
- * @param meetingId - ID de la reunión a la que se quiere unir
- * @returns Sesión con token y configuración para conectar
+ * Creates a voice session for a meeting; token is typically valid for ~5 minutes.
+ * @param meetingId Meeting identifier to join.
+ * @returns Session payload containing token and connection settings.
  */
 export async function createVoiceSession(meetingId: string): Promise<VoiceSession> {
   const session = await apiFetch<VoiceSession>('/api/voice/session', {
@@ -105,8 +101,8 @@ export async function createVoiceSession(meetingId: string): Promise<VoiceSessio
 }
 
 /**
- * Calcula el tiempo restante antes de que expire el token de voz
- * @returns milisegundos hasta expiración, o 0 si ya expiró
+ * Computes remaining lifetime for a voice session token.
+ * @returns Milliseconds until expiration (0 when already expired).
  */
 export function getTokenExpirationMs(session: VoiceSession): number {
   const expiresAt = new Date(session.expiresAt).getTime();
@@ -115,9 +111,9 @@ export function getTokenExpirationMs(session: VoiceSession): number {
 }
 
 /**
- * Verifica si un token de sesión de voz está por expirar
- * @param session - Sesión de voz a verificar
- * @param bufferMs - Margen de seguridad en ms (default: 60 segundos)
+ * Checks whether a voice session token is about to expire.
+ * @param session Session to inspect.
+ * @param bufferMs Safety buffer in ms (default 60s).
  */
 export function isTokenExpiringSoon(session: VoiceSession, bufferMs = 60_000): boolean {
   return getTokenExpirationMs(session) < bufferMs;

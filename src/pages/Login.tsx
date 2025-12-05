@@ -17,6 +17,9 @@ import {
 import type { ApiError } from '@/lib/api-client';
 import { toast } from 'sonner';
 
+/**
+ * Login page handling email/password and OAuth flows plus password reset trigger.
+ */
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuthStore();

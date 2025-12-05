@@ -163,6 +163,10 @@ function toast({ ...props }: Toast) {
   };
 }
 
+/**
+ * Hook exposing toast state and helpers backed by an in-memory singleton queue.
+ * @returns Current toasts plus helpers to show or dismiss.
+ */
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState);
 
@@ -183,4 +187,7 @@ function useToast() {
   };
 }
 
+/**
+ * Imperative helper to show a toast with optional action.
+ */
 export { useToast, toast };

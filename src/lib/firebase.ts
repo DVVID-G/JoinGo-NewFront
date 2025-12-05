@@ -27,5 +27,12 @@ assertFirebaseConfig();
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
+/**
+ * Singleton Firebase app instance configured from `VITE_FIREBASE_*` env vars.
+ */
 export const firebaseApp = app;
+
+/**
+ * Firebase Auth instance used across the app.
+ */
 export const firebaseAuth = getAuth(app);

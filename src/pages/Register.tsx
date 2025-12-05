@@ -18,6 +18,9 @@ import { syncUserProfile } from '@/services/user';
 import type { ApiError } from '@/lib/api-client';
 import { toast } from 'sonner';
 
+/**
+ * Registration page supporting email/password sign-up and OAuth onboarding.
+ */
 export default function Register() {
   const navigate = useNavigate();
   const { login, updateUser } = useAuthStore();

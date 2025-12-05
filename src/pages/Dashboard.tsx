@@ -11,6 +11,9 @@ import { useAuthStore } from '@/store/authStore';
 import { useMeetingStore } from '@/store/meetingStore';
 import { toast } from 'sonner';
 
+/**
+ * Dashboard page for authenticated users to create or join meetings and view upcoming ones.
+ */
 export default function Dashboard() {
   const { user, isAuthenticated } = useAuthStore();
   const { getUpcomingMeetings } = useMeetingStore();

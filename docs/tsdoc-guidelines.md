@@ -1,0 +1,23 @@
+# TSDoc Guidelines (JoinGo Frontend)
+
+- Language: English for technical docs; UI copy stays in Spanish.
+- Scope: Document exported functions, classes, hooks, and top-level helpers. Avoid commenting JSX-only render blocks unless they encapsulate logic.
+- Structure:
+  - Short description (what/why, not how).
+  - `@param` for each parameter (include units or expected format when relevant).
+  - `@returns` describing the resolved value; omit when `void` unless clarity is needed.
+  - `@throws` for expected errors (e.g., network, validation, Firebase codes) when applicable.
+  - `@remarks` for nuances (side effects, caching, retries, auth requirements).
+  - `@example` only when usage is non-obvious (keep concise).
+- Style:
+  - Use imperative/concise tone: "Fetches", "Returns", "Starts".
+  - Mention side effects: network calls, state mutations, token refresh, localStorage persistence.
+  - Avoid repeating the function name; avoid implementation trivia.
+- Firebase/Auth specifics:
+  - Note when a function expects the user to be authenticated or will refresh tokens.
+  - For password reset flows, state that links use `/reset-password` handler.
+- WebRTC/Voice specifics:
+  - Document callbacks, media permissions, and auto-retry behavior.
+- Formatting:
+  - Wrap identifiers in backticks when referenced in text.
+  - Keep lines reasonably short; prefer one-blank-line separation between blocks.

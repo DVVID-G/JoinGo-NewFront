@@ -58,6 +58,11 @@ export class ProviderRedirectError extends Error {
   }
 }
 
+/**
+ * Registers a user via backend and then logs in to return auth payload.
+ * @param params User profile and credentials.
+ * @returns Normalized user and tokens.
+ */
 export async function registerWithEmail(params: RegisterPayload): Promise<AuthPayload> {
   await apiFetch('/api/auth/register', {
     method: 'POST',
@@ -77,6 +82,11 @@ export async function registerWithEmail(params: RegisterPayload): Promise<AuthPa
   );
 }
 
+/**
+ * Logs in using email/password against backend auth.
+ * @param params Email and password.
+ * @param overrides Optional first/last name overrides for mapping.
+ */
 export async function loginWithEmail(
   params: { email: string; password: string },
   overrides?: Partial<Pick<User, 'firstName' | 'lastName'>>
@@ -92,6 +102,12 @@ export async function loginWithEmail(
   };
 }
 
+/**
+ * Initiates OAuth login with the given provider, handling popup fallback to redirect.
+ * @param providerName Provider identifier (google | github).
+ * @returns Auth payload with normalized user and tokens.
+ * @throws ProviderRedirectError to signal redirect flow continuation.
+ */
 export async function loginWithProvider(providerName: ProviderName): Promise<AuthPayload> {
   const provider = buildAuthProvider(providerName);
 
@@ -168,6 +184,11 @@ export function isProviderRedirectError(error: unknown): error is ProviderRedire
   return error instanceof ProviderRedirectError;
 }
 
+/**
+ * Sends a password reset email using Firebase, falling back to backend endpoint if needed.
+ * The handler URL points to `/reset-password` in this frontend.
+ * @param email Target account email.
+ */
 export async function requestPasswordReset(email: string): Promise<void> {
   const resetUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/reset-password`
@@ -184,6 +205,9 @@ export async function requestPasswordReset(email: string): Promise<void> {
   }
 }
 
+/**
+ * Logs out the current user in backend (best effort) and Firebase Auth.
+ */
 export async function logoutUser(): Promise<void> {
   try {
     await apiFetch('/api/auth/logout', { method: 'POST' });
