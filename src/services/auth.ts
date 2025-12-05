@@ -7,6 +7,7 @@ import {
   signInWithPopup,
   signInWithRedirect,
   signOut,
+  sendPasswordResetEmail,
   User as FirebaseUser,
 } from 'firebase/auth';
 import { firebaseAuth } from '@/lib/firebase';
@@ -168,10 +169,15 @@ export function isProviderRedirectError(error: unknown): error is ProviderRedire
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {
-  await apiFetch('/api/auth/forgot-password', {
-    method: 'POST',
-    body: JSON.stringify({ email }),
-  });
+  try {
+    await sendPasswordResetEmail(firebaseAuth, email);
+  } catch (error) {
+    // Fallback al backend por compatibilidad
+    await apiFetch('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
 }
 
 export async function logoutUser(): Promise<void> {
