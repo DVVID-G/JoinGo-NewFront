@@ -29,6 +29,7 @@ import { getMeetingById, updateMeetingStatus } from '@/services/meetings';
 import { useChat } from '@/hooks/use-chat';
 import { startVoiceChat, stopVoiceChat, setMicrophoneEnabled } from '@/services/webrtc';
 import { toast } from 'sonner';
+import { localStream, peers } from '@/services/webrtc';
 
 /**
  * Hidden audio renderer for a remote peer stream.
@@ -44,6 +45,19 @@ function RemoteAudio({ peerId, stream }: { peerId: string; stream: MediaStream }
   
   return <audio ref={ref} data-peer-id={peerId} autoPlay playsInline style={{ display: "none" }} />;
 }
+function createEmptyVideoTrack() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1;
+  canvas.height = 1;
+
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "black";
+  ctx.fillRect(0, 0, 1, 1);
+
+  const stream = canvas.captureStream();
+  return stream.getVideoTracks()[0];
+}
+
 
 /**
  * Meeting room page handling media, voice chat, and text chat for a meeting code/ID.
@@ -246,6 +260,29 @@ export default function MeetingRoom() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meeting?.id]);
+  //Actualizar video 
+  // Mantener el srcObject del video local en sincronía con localStream / isVideoOn
+useEffect(() => {
+  const el = localVideoRef.current;
+  if (!el) return;
+
+  if (isVideoOn && localStream) {
+    // si el elemento no tiene ya el stream, asignarlo
+    if (el.srcObject !== localStream) {
+      el.srcObject = localStream;
+    }
+    // intentar reproducir (evita que quede en pausa)
+    el.play().catch(() => {});
+  } else {
+    // limpiar completamente para evitar frame congelado
+    el.srcObject = null;
+    el.pause();
+    el.src = "";
+    el.load();
+  }
+
+  // No hace falta cleanup especial
+}, [localStream, isVideoOn, localVideoRef]);
 
   // Actualizar estado de micrófono
   useEffect(() => {
@@ -327,40 +364,67 @@ export default function MeetingRoom() {
     sendChatMessage(chatMessage.trim());
     setChatMessage('');
   };
+  //**  Emptyvideotrack/
+
 
   /**
    * Toggles local video track, requesting permissions again when needed.
    */
   const toggleVideo = async () => {
-    const stream = localStream;
-    const videoTrack = stream?.getVideoTracks()[0];
+  if (!localStream) return;
 
-    // Si no hay track y queremos encender, pedimos permisos de nuevo
-    if (!videoTrack && !isVideoOn) {
-      await initializeMediaDevices();
-      const refreshedTrack = localStream?.getVideoTracks()[0];
-      if (refreshedTrack) {
-        refreshedTrack.enabled = true;
-        setIsVideoOn(true);
-        toast.info('Cámara activada');
-      }
-      return;
+  const videoTrack = localStream.getVideoTracks()[0];
+  if (!videoTrack) return;
+
+  const isOn = videoTrack.enabled;
+
+  // ==========================
+  // 🔴 APAGAR VIDEO
+  // ==========================
+  if (isOn) {
+    videoTrack.enabled = false;
+
+    // Reemplazar el videoTrack por sí mismo (evita errores sin usar fake track)
+    peers.forEach(peer => {
+      try {
+        peer.replaceTrack(videoTrack, videoTrack, localStream);
+      } catch (_) {}
+    });
+
+    // Limpiar vista local para evitar imagen congelada
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null;
+      localVideoRef.current.pause();
+      localVideoRef.current.src = "";
+      localVideoRef.current.load();
     }
 
-    if (videoTrack) {
-      const nextState = !videoTrack.enabled;
-      videoTrack.enabled = nextState;
-      setIsVideoOn(nextState);
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = nextState ? stream ?? null : null;
-      }
-      toast.info(nextState ? 'Cámara activada' : 'Cámara desactivada');
-      return;
-    }
+    setIsVideoOn(false);
+    return;
+  }
 
-    // Sin stream, simplemente invierte estado para la UI
-    setIsVideoOn((prev) => !prev);
-  };
+  // ==========================
+  // 🟢 ENCENDER VIDEO
+  // ==========================
+  videoTrack.enabled = true;
+
+  // Restaurar transmisión
+  peers.forEach(peer => {
+    try {
+      peer.replaceTrack(videoTrack, videoTrack, localStream);
+    } catch (_) {}
+  });
+
+  // Restaurar vista local
+  if (localVideoRef.current) {
+    localVideoRef.current.srcObject = localStream;
+    localVideoRef.current.play().catch(() => {});
+  }
+
+  setIsVideoOn(true);
+};
+
+
 
   /**
    * Toggles microphone tracks on/off.
@@ -489,7 +553,43 @@ export default function MeetingRoom() {
         <main className="flex flex-1 flex-col min-h-0">
           {/* Video grid */}
           <div className="flex-1 p-4 min-h-0">
-            <div className="grid h-full min-h-0 gap-4 grid-cols-1 place-items-center">
+            <div
+              className={`grid gap-4 w-full h-full
+                ${
+                  Object.keys(remoteStreams).length + 1 <= 1
+                    ? "grid-cols-1"
+                    : Object.keys(remoteStreams).length + 1 === 2
+                    ? "grid-cols-2"
+                    : Object.keys(remoteStreams).length + 1 <= 4
+                    ? "grid-cols-2"
+                    : "grid-cols-3"
+                }
+              `}
+            >
+              
+            {/* Remote videos */}
+                {Object.entries(remoteStreams).map(([peerId, stream]) => (
+                  <div
+                    key={peerId}
+                    className="relative flex h-full max-h-[calc(100vh-260px)] min-h-[260px] w-full max-w-5xl items-center justify-center rounded-xl bg-black overflow-hidden"
+                  >
+                    <video
+                      autoPlay
+                      playsInline
+                      ref={(el) => {
+                        if (el) el.srcObject = stream;
+                      }}
+                      className="h-full w-full object-contain"
+                    />
+
+                    <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-lg bg-background/80 px-3 py-1.5 backdrop-blur-sm">
+                      <span className="text-sm font-medium text-foreground">
+                        Participante {peerId.substring(0, 4)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+
               {/* Main video (self) */}
               <div className="relative flex h-full max-h-[calc(100vh-260px)] min-h-[260px] w-full max-w-5xl items-center justify-center rounded-xl bg-black overflow-hidden">
                 {isVideoOn ? (

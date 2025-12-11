@@ -9,9 +9,9 @@ const iceServerUrl = import.meta.env.VITE_ICE_SERVER_URL;
 const iceServerUsername = import.meta.env.VITE_ICE_SERVER_USERNAME;
 const iceServerCredential = import.meta.env.VITE_ICE_SERVER_CREDENTIAL;
 
-const peers = new Map<string, Peer.Instance>();
+export const peers = new Map<string, Peer.Instance>();
 let socket: Socket | null = null;
-let localStream: MediaStream | null = null;
+export let localStream: MediaStream | null = null;
 let currentMeetingId: string | null = null;
 
 const voiceEvents = new EventEmitter();
@@ -44,6 +44,7 @@ const iceServers = (() => {
   return [entry];
 })();
 
+
 export interface VoiceChatCallbacks {
   /** Called when a remote peer publishes a stream. */
   onRemoteStream?: (peerId: string, stream: MediaStream) => void;
@@ -73,7 +74,7 @@ export async function startVoiceChat(
   );
   console.log("[WebRTC] Iniciando voice chat para meetingId:", meetingId);
 
-  localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+  localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
   const socketInstance = await createSocket(meetingId);
 
   const handleRemoteStream = (peerId: string, stream: MediaStream) => {
@@ -159,11 +160,14 @@ function ensurePeer(
 
   console.log("[WebRTC] Creando nuevo peer:", peerId, "initiator:", initiator);
   
-  const peer = new Peer({
+    const peer = new Peer({
     initiator,
     trickle: false,
-    stream: localStream ?? undefined,
     config: { iceServers },
+  });
+
+  peer.on("connect", () => {
+    if (localStream) peer.addStream(localStream);
   });
 
   peer.on("signal", (data: Peer.SignalData) => {
