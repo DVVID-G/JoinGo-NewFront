@@ -726,8 +726,8 @@ export default function MeetingRoom() {
                       </span>
                       <div
                         className={`mt-1 rounded-lg px-3 py-2 ${msg.userId === user.id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-foreground'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-foreground'
                           }`}
                       >
                         <p className="text-sm">{msg.message}</p>
@@ -754,7 +754,8 @@ export default function MeetingRoom() {
           </aside>
         )}
 
-        
+
+        {/* Sidebar - Participants */}
         {/* Sidebar - Participants */}
         {isParticipantsOpen && (
           <aside
@@ -768,7 +769,6 @@ export default function MeetingRoom() {
               <h2 className="font-semibold text-foreground">
                 Participantes ({usersOnline?.count ?? 1})
               </h2>
-
               <Button
                 variant="ghost"
                 size="icon"
@@ -780,7 +780,6 @@ export default function MeetingRoom() {
 
             {/* SCROLL */}
             <ScrollArea className="flex-1">
-
               <div className="p-4 space-y-4">
 
                 {/* LOCAL USER */}
@@ -807,55 +806,53 @@ export default function MeetingRoom() {
                   </div>
                 </div>
 
-                {/* ---------------------- */}
-                {/* MINI VIDEOS REMOTOS   */}
-                {/* ---------------------- */}
-
+                {/* REMOTE MINI VIDEOS */}
                 <div className="space-y-3">
-                  {Object.entries(remoteStreams).map(([peerId, stream]) => (
-                    <div
-                      key={peerId}
-                      className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted"
-                    >
+                  {Object.entries(remoteStreams).map(([peerId, stream]) => {
+                    // Normalizamos nombre del participante
+                    const participant = usersOnline?.users?.find(u => u.odId === peerId);
+                    const displayName = participant?.odName || `Usuario ${peerId.slice(0, 6)}`;
+                    
 
-                      {/* Mini video */}
-                      <div className="h-14 w-20 bg-black rounded overflow-hidden">
-                        <video
-                          autoPlay
-                          playsInline
-                          ref={(el) => {
-                            if (el) el.srcObject = stream;
-                          }}
-                          className="h-full w-full object-cover"
-                          muted
-                        />
+
+                    return (
+                      <div
+                        key={peerId}
+                        className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted"
+                      >
+                        {/* Mini video */}
+                        <div className="h-14 w-20 bg-black rounded overflow-hidden">
+                          <video
+                            autoPlay
+                            playsInline
+                            ref={(el) => {
+                              if (el) el.srcObject = stream;
+                            }}
+                            className="h-full w-full object-cover"
+                            muted
+                          />
+                        </div>
+
+                        {/* Nombre */}
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-foreground">{displayName}</p>
+                          <p className="text-xs text-muted-foreground">En llamada</p>
+                        </div>
+
+                        {/* Estado mic/cam (no tienes datos remotos aún, mostramos iconos) */}
+                        <div className="flex items-center gap-1">
+                          <Mic className="h-4 w-4 text-muted-foreground" />
+                          <Video className="h-4 w-4 text-muted-foreground" />
+                        </div>
                       </div>
-
-                      {/* Nombre */}
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground">
-                          {usersOnline?.users?.find((u) => u.odId === peerId)?.odName
-                            ?? `Usuario ${peerId.slice(0, 6)}`}
-                        </p>
-                        <p className="text-xs text-muted-foreground">En llamada</p>
-                      </div>
-
-                      {/* Estado mic/cam (no tienes datos remotos aún, así que mostramos "en llamada") */}
-                      <div className="flex items-center gap-1">
-                        <Mic className="h-4 w-4 text-muted-foreground" />
-                        <Video className="h-4 w-4 text-muted-foreground" />
-                      </div>
-
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
               </div>
             </ScrollArea>
           </aside>
         )}
-
-
       </div>
 
       {/* Audio elements */}
