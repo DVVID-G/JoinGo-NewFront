@@ -36,13 +36,13 @@ import { localStream, peers } from '@/services/webrtc';
  */
 function RemoteAudio({ peerId, stream }: { peerId: string; stream: MediaStream }) {
   const ref = useRef<HTMLAudioElement | null>(null);
-  
+
   useEffect(() => {
     if (ref.current) {
       ref.current.srcObject = stream;
     }
   }, [stream]);
-  
+
   return <audio ref={ref} data-peer-id={peerId} autoPlay playsInline style={{ display: "none" }} />;
 }
 function createEmptyVideoTrack() {
@@ -67,32 +67,32 @@ export default function MeetingRoom() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
   const { getMeetingByIdOrCode, upsertMeeting } = useMeetingStore();
-  
+
   // Estado de la reunión
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [isLoadingMeeting, setIsLoadingMeeting] = useState(true);
   const [meetingError, setMeetingError] = useState<string | null>(null);
-  
+
   // Estado de controles de media
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isAudioOn, setIsAudioOn] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  
+
   // Estado de paneles laterales
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
-  
+
   // Estado para WebRTC
   const [voiceReady, setVoiceReady] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  
+
   // Referencias para media streams
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const localAudioRef = useRef<HTMLAudioElement | null>(null);
-  
+
   const hasSidePanelOpen = isChatOpen || isParticipantsOpen;
   const isHost = meeting?.hostUid === user?.id || meeting?.createdBy === user?.id;
 
@@ -148,7 +148,7 @@ export default function MeetingRoom() {
         audio: true,
       });
       setLocalStream(stream);
-      
+
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
@@ -182,10 +182,10 @@ export default function MeetingRoom() {
 
       // Buscar en el store local por ID o código
       const localMeeting = getMeetingByIdOrCode(code);
-      
+
       // Determinar qué ID usar para la llamada al backend
       const meetingIdToFetch = localMeeting?.id ?? code;
-      
+
       try {
         // Verificar con el backend que la reunión existe y está activa
         const apiMeeting = await getMeetingById(meetingIdToFetch);
@@ -214,7 +214,7 @@ export default function MeetingRoom() {
     }
 
     console.log('[MeetingRoom] Reunión cargada, iniciando servicios para:', meeting.id);
-    
+
     // Inicializar dispositivos de media y conectar chat sin abrir panel
     initializeMediaDevices();
     connectChat();
@@ -224,7 +224,7 @@ export default function MeetingRoom() {
   // Iniciar WebRTC cuando tengamos meetingId
   useEffect(() => {
     if (!meeting?.id) return;
-    
+
     setVoiceError(null);
     let cleanup: (() => void) | null = null;
     let cancelled = false;
@@ -262,27 +262,27 @@ export default function MeetingRoom() {
   }, [meeting?.id]);
   //Actualizar video 
   // Mantener el srcObject del video local en sincronía con localStream / isVideoOn
-useEffect(() => {
-  const el = localVideoRef.current;
-  if (!el) return;
+  useEffect(() => {
+    const el = localVideoRef.current;
+    if (!el) return;
 
-  if (isVideoOn && localStream) {
-    // si el elemento no tiene ya el stream, asignarlo
-    if (el.srcObject !== localStream) {
-      el.srcObject = localStream;
+    if (isVideoOn && localStream) {
+      // si el elemento no tiene ya el stream, asignarlo
+      if (el.srcObject !== localStream) {
+        el.srcObject = localStream;
+      }
+      // intentar reproducir (evita que quede en pausa)
+      el.play().catch(() => { });
+    } else {
+      // limpiar completamente para evitar frame congelado
+      el.srcObject = null;
+      el.pause();
+      el.src = "";
+      el.load();
     }
-    // intentar reproducir (evita que quede en pausa)
-    el.play().catch(() => {});
-  } else {
-    // limpiar completamente para evitar frame congelado
-    el.srcObject = null;
-    el.pause();
-    el.src = "";
-    el.load();
-  }
 
-  // No hace falta cleanup especial
-}, [localStream, isVideoOn, localVideoRef]);
+    // No hace falta cleanup especial
+  }, [localStream, isVideoOn, localVideoRef]);
 
   // Actualizar estado de micrófono
   useEffect(() => {
@@ -317,7 +317,7 @@ useEffect(() => {
     if (localStream) {
       localStream.getTracks().forEach((track) => track.stop());
     }
-    
+
     // Si es host, preguntar si quiere cerrar la reunión para todos
     if (isHost && meeting?.id) {
       try {
@@ -329,7 +329,7 @@ useEffect(() => {
     } else {
       toast.info('Has salido de la reunión');
     }
-    
+
     navigate('/dashboard');
   };
 
@@ -371,58 +371,58 @@ useEffect(() => {
    * Toggles local video track, requesting permissions again when needed.
    */
   const toggleVideo = async () => {
-  if (!localStream) return;
+    if (!localStream) return;
 
-  const videoTrack = localStream.getVideoTracks()[0];
-  if (!videoTrack) return;
+    const videoTrack = localStream.getVideoTracks()[0];
+    if (!videoTrack) return;
 
-  const isOn = videoTrack.enabled;
+    const isOn = videoTrack.enabled;
 
-  // ==========================
-  // 🔴 APAGAR VIDEO
-  // ==========================
-  if (isOn) {
-    videoTrack.enabled = false;
+    // ==========================
+    // 🔴 APAGAR VIDEO
+    // ==========================
+    if (isOn) {
+      videoTrack.enabled = false;
 
-    // Reemplazar el videoTrack por sí mismo (evita errores sin usar fake track)
+      // Reemplazar el videoTrack por sí mismo (evita errores sin usar fake track)
+      peers.forEach(peer => {
+        try {
+          peer.replaceTrack(videoTrack, videoTrack, localStream);
+        } catch (_) { }
+      });
+
+      // Limpiar vista local para evitar imagen congelada
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = null;
+        localVideoRef.current.pause();
+        localVideoRef.current.src = "";
+        localVideoRef.current.load();
+      }
+
+      setIsVideoOn(false);
+      return;
+    }
+
+    // ==========================
+    // 🟢 ENCENDER VIDEO
+    // ==========================
+    videoTrack.enabled = true;
+
+    // Restaurar transmisión
     peers.forEach(peer => {
       try {
         peer.replaceTrack(videoTrack, videoTrack, localStream);
-      } catch (_) {}
+      } catch (_) { }
     });
 
-    // Limpiar vista local para evitar imagen congelada
+    // Restaurar vista local
     if (localVideoRef.current) {
-      localVideoRef.current.srcObject = null;
-      localVideoRef.current.pause();
-      localVideoRef.current.src = "";
-      localVideoRef.current.load();
+      localVideoRef.current.srcObject = localStream;
+      localVideoRef.current.play().catch(() => { });
     }
 
-    setIsVideoOn(false);
-    return;
-  }
-
-  // ==========================
-  // 🟢 ENCENDER VIDEO
-  // ==========================
-  videoTrack.enabled = true;
-
-  // Restaurar transmisión
-  peers.forEach(peer => {
-    try {
-      peer.replaceTrack(videoTrack, videoTrack, localStream);
-    } catch (_) {}
-  });
-
-  // Restaurar vista local
-  if (localVideoRef.current) {
-    localVideoRef.current.srcObject = localStream;
-    localVideoRef.current.play().catch(() => {});
-  }
-
-  setIsVideoOn(true);
-};
+    setIsVideoOn(true);
+  };
 
 
 
@@ -555,40 +555,39 @@ useEffect(() => {
           <div className="flex-1 p-4 min-h-0">
             <div
               className={`grid gap-4 w-full h-full
-                ${
-                  Object.keys(remoteStreams).length + 1 <= 1
-                    ? "grid-cols-1"
-                    : Object.keys(remoteStreams).length + 1 === 2
+                ${Object.keys(remoteStreams).length + 1 <= 1
+                  ? "grid-cols-1"
+                  : Object.keys(remoteStreams).length + 1 === 2
                     ? "grid-cols-2"
                     : Object.keys(remoteStreams).length + 1 <= 4
-                    ? "grid-cols-2"
-                    : "grid-cols-3"
+                      ? "grid-cols-2"
+                      : "grid-cols-3"
                 }
               `}
             >
-              
-            {/* Remote videos */}
-                {Object.entries(remoteStreams).map(([peerId, stream]) => (
-                  <div
-                    key={peerId}
-                    className="relative flex h-full max-h-[calc(100vh-260px)] min-h-[260px] w-full max-w-5xl items-center justify-center rounded-xl bg-black overflow-hidden"
-                  >
-                    <video
-                      autoPlay
-                      playsInline
-                      ref={(el) => {
-                        if (el) el.srcObject = stream;
-                      }}
-                      className="h-full w-full object-contain"
-                    />
 
-                    <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-lg bg-background/80 px-3 py-1.5 backdrop-blur-sm">
-                      <span className="text-sm font-medium text-foreground">
-                        Participante {peerId.substring(0, 4)}
-                      </span>
-                    </div>
+              {/* Remote videos */}
+              {Object.entries(remoteStreams).map(([peerId, stream]) => (
+                <div
+                  key={peerId}
+                  className="relative flex h-full max-h-[calc(100vh-260px)] min-h-[260px] w-full max-w-5xl items-center justify-center rounded-xl bg-black overflow-hidden"
+                >
+                  <video
+                    autoPlay
+                    playsInline
+                    ref={(el) => {
+                      if (el) el.srcObject = stream;
+                    }}
+                    className="h-full w-full object-contain"
+                  />
+
+                  <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-lg bg-background/80 px-3 py-1.5 backdrop-blur-sm">
+                    <span className="text-sm font-medium text-foreground">
+                      Participante {peerId.substring(0, 4)}
+                    </span>
                   </div>
-                ))}
+                </div>
+              ))}
 
               {/* Main video (self) */}
               <div className="relative flex h-full max-h-[calc(100vh-260px)] min-h-[260px] w-full max-w-5xl items-center justify-center rounded-xl bg-black overflow-hidden">
@@ -719,19 +718,17 @@ useEffect(() => {
                   {messages.map((msg) => (
                     <div
                       key={msg.messageId}
-                      className={`flex flex-col ${
-                        msg.userId === user.id ? 'items-end' : 'items-start'
-                      }`}
+                      className={`flex flex-col ${msg.userId === user.id ? 'items-end' : 'items-start'
+                        }`}
                     >
                       <span className="text-xs text-muted-foreground">
                         {msg.userName ?? 'Usuario'}
                       </span>
                       <div
-                        className={`mt-1 rounded-lg px-3 py-2 ${
-                          msg.userId === user.id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-foreground'
-                        }`}
+                        className={`mt-1 rounded-lg px-3 py-2 ${msg.userId === user.id
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-foreground'
+                          }`}
                       >
                         <p className="text-sm">{msg.message}</p>
                       </div>
@@ -757,9 +754,17 @@ useEffect(() => {
           </aside>
         )}
 
+
+        {/* Sidebar - Participants */}
         {/* Sidebar - Participants */}
         {isParticipantsOpen && (
-          <aside className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-sm flex-col border-l border-border bg-card shadow-lg lg:static lg:h-auto lg:w-80">
+          <aside
+            className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-sm flex-col 
+               border-l border-border bg-card shadow-lg transform transition-transform 
+               duration-300 translate-x-0 lg:static lg:h-auto lg:w-80"
+          >
+
+            {/* HEADER */}
             <div className="flex items-center justify-between border-b border-border p-4">
               <h2 className="font-semibold text-foreground">
                 Participantes ({usersOnline?.count ?? 1})
@@ -773,9 +778,11 @@ useEffect(() => {
               </Button>
             </div>
 
+            {/* SCROLL */}
             <ScrollArea className="flex-1">
-              <div className="p-4 space-y-2">
-                {/* Usuario local */}
+              <div className="p-4 space-y-4">
+
+                {/* LOCAL USER */}
                 <div className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted">
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={user.avatar} alt={user.firstName} />
@@ -783,6 +790,7 @@ useEffect(() => {
                       {user.firstName.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
+
                   <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">
                       {user.firstName} {user.lastName}
@@ -791,35 +799,56 @@ useEffect(() => {
                       {isHost ? 'Anfitrión' : 'Tú'}
                     </p>
                   </div>
+
                   <div className="flex items-center gap-1">
                     {!isAudioOn && <MicOff className="h-4 w-4 text-muted-foreground" />}
                     {!isVideoOn && <VideoOff className="h-4 w-4 text-muted-foreground" />}
                   </div>
                 </div>
 
-                {/* Otros participantes */}
-                {usersOnline?.users
-                  .filter((u) => u.odId !== user?.id)
-                  .map((participant) => (
-                    <div
-                      key={participant.odId}
-                      className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted"
-                    >
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-secondary text-secondary-foreground">
-                          {(participant.odName ?? participant.odId).charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground">
-                          {participant.odName ?? `Usuario ${participant.odId.slice(0, 6)}`}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {remoteStreams[participant.odId] ? 'En llamada' : 'En sala'}
-                        </p>
+                {/* REMOTE MINI VIDEOS */}
+                <div className="space-y-3">
+                  {Object.entries(remoteStreams).map(([peerId, stream]) => {
+                    // Normalizamos nombre del participante
+                    const participant = usersOnline?.users?.find(u => u.odId === peerId);
+                    const displayName = participant?.odName || `Usuario ${peerId.slice(0, 6)}`;
+                    
+
+
+                    return (
+                      <div
+                        key={peerId}
+                        className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted"
+                      >
+                        {/* Mini video */}
+                        <div className="h-14 w-20 bg-black rounded overflow-hidden">
+                          <video
+                            autoPlay
+                            playsInline
+                            ref={(el) => {
+                              if (el) el.srcObject = stream;
+                            }}
+                            className="h-full w-full object-cover"
+                            muted
+                          />
+                        </div>
+
+                        {/* Nombre */}
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-foreground">{displayName}</p>
+                          <p className="text-xs text-muted-foreground">En llamada</p>
+                        </div>
+
+                        {/* Estado mic/cam (no tienes datos remotos aún, mostramos iconos) */}
+                        <div className="flex items-center gap-1">
+                          <Mic className="h-4 w-4 text-muted-foreground" />
+                          <Video className="h-4 w-4 text-muted-foreground" />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+                </div>
+
               </div>
             </ScrollArea>
           </aside>
